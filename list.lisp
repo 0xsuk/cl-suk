@@ -7,4 +7,4 @@
 	"Like adjoin, but append item to the end of the list"
 	(if (member item list)
 			list
-			(append list (list item))))
+		(append list (list item))))
