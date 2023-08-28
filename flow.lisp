@@ -1,7 +1,29 @@
 (in-package :suk.flow)
 
 (defmacro flow (&body body)
-  "Threading macro like -<>> from cl-arrows, with support for ad hoc variable binding"
+  "Threading macro like -<>> from cl-arrows, with support for ad hoc variable binding.
+
+Usage:
+(flow
+        10
+        (+ 1)
+        (* <> 3) :as a
+
+        100
+        (+ <> <>) :as b
+        
+        (format t "a is ~A and b is ~A~%" a b)
+        )
+this expands to:
+(LET (A B)
+  (-<>> 10 (+ 1) (* <> 3) (SETF A))
+  (-<>> 100 (+ <> <>) (SETF B))
+  (-<>> (FORMAT T "a is ~A and b is ~A~%" A B)))
+
+output:
+a is 33 and b is 200
+NIL
+"
   (let* ((variables '())
          (blocks '()))
     (iter
