@@ -15,3 +15,9 @@
    :suk.list)
   (:export
    :flow))
+
+(defpackage :suk.system
+  (:use
+   :cl
+   :suk.flow)
+  )
