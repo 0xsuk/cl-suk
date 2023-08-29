@@ -20,4 +20,6 @@
   (:use
    :cl
    :suk.flow)
+  (:export
+   :add-nickname)
   )
