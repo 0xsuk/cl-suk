@@ -3,9 +3,11 @@
   :depends-on (
                :cl-arrows
                :iterate
+               :alexandria
                )
   :serial t
   :components ((:file "package")
                (:file "list")
                (:file "flow")
-               (:file "system")))
+               (:file "system"))
+  )
