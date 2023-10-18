@@ -9,7 +9,7 @@
     (setf nickname (string nickname)))
   (check-type package package)
   (check-type nickname string)
-  (flow
+  (-<>
     (if keep-existing-nicknames-p
         (adjoin nickname (package-nicknames package)
                 :test #'string=)

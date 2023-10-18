@@ -12,23 +12,10 @@
              :collect `(:export ,@(external-symbols parent-package)))))
 
 
-(defpackage :suk.list
-  (:use
-   :cl
-   :cl-arrows
-   :iterate)
-  (:export
-   :push-end
-   :adjoin-end))
-
 (defpackage :suk.flow
   (:use
-   :cl
-   :cl-arrows
-   :iterate
-   :suk.list)
-  (:export
-   :flow))
+   :cl)
+  (:export :-> :->> :-<> :-<>>))
 
 (defpackage :suk.system
   (:use
@@ -39,6 +26,5 @@
   )
 
 (defpackage-inheriting :suk
-  (:suk.list
-   :suk.flow
+  (:suk.flow
    :suk.system))

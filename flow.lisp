@@ -1,77 +1,101 @@
 (in-package :suk.flow)
 
-(defmacro flow (&body body)
-  "Threading macro like -<>> from cl-arrows, with support for ad hoc variable binding.
+(defun <>p (expr)
+  (and (symbolp expr)
+       (string= expr "<>")))
 
-Usage:
-(flow
-        10
-        (+ 1)
-        (* <> 3) :as a
+(defun ><p (expr)
+  (and (symbolp expr)
+       (string= expr "><")))
 
-        100
-        (+ <> <>) :as b
-        
-        (format t "a is ~A and b is ~A~%" a b)
-        )
-this expands to:
-(LET (A B)
-  (-<>> 10 (+ 1) (* <> 3) (SETF A))
-  (-<>> 100 (+ <> <>) (SETF B))
-  (-<>> (FORMAT T "a is ~A and b is ~A~%" A B)))
+(defmacro -> (expr &rest exprs)
+  "insert first"
+  (if (null exprs)
+      expr
+      (loop
+        with result = expr
+        for each in exprs do
+          (if (listp each)
+              (setq result (list* (car each) result (cdr each)))
+              (setq result (list each result)))
+        finally (return result)
+        )))
 
-output:
-a is 33 and b is 200
-NIL
-"
-  (let* ((variables '())
-         (blocks '()))
-    (iter
-      (with block = '())
-      (with variablep = nil)
-      (for codes on body)
-      (for code = (car codes))
-      (when variablep
-        (setf variablep nil)
-        (next-iteration))
-      (when (eq code ':as)
-        (unless block
-          (error "Cannot use :as in the first place of the body"))
-        (push-end block blocks)
-        (setf block '())
-        
-        (let ((variable_name (cadr codes)))
-          (unless (symbolp variable_name)
-            (error (format nil "Cannot use ~A as variable name" variable_name)))
-          (setf variables (adjoin-end variable_name variables)))
-        
-        (setf variablep t)
-        (next-iteration)
-        )
-      (when (eq code ':end)
-        (unless block
-          (error "Cannot use :end in the first place of the body"))
-        (push-end block blocks)
-        (setf block '())
-        (next-iteration)
-        )
-      (push-end code block)
-      (finally
-       (when block (push-end block blocks)))
-      )
-    
-    `(let (,@variables)
-       ,@(iter
-           (for i below (length blocks))
-           (for block = (nth i blocks))
-           (for variable = (nth i variables)) ; variable is nil if i is out of range
-           (collect `(-<>>
-                      ,@block
-                      ,@(if variable ; using ,@ so that nil is not inserted when variable is nil
-                            `((setf ,variable))
-                            )
-                      ))
-           ))
-    )
+(defmacro ->> (expr &rest exprs)
+  "insert last"
+  (if (null exprs)
+      expr
+      (loop
+        with result = expr
+        for each in exprs do
+          (if (listp each)
+              (setq result (append each (list result)))
+              (setq result (list each result)))
+        finally (return result)))
   )
 
+(defun replace-<> (args acc)
+  (let ((replaced-p nil)
+        (result nil))
+    (loop
+      for each in args do
+        (if (<>p each)
+            (progn (push acc result)
+                   (setq replaced-p t))
+            (push each result)))
+    (values (nreverse result) replaced-p))
+  )
+
+(defun replace-<>-or-insert-last (args acc)
+  (multiple-value-bind (newargs replaced-p) (replace-<> args acc)
+    (if replaced-p
+        newargs
+        (append newargs (list acc))
+        ))
+  )
+
+(defun replace-<>-or-insert-first (args acc)
+  (multiple-value-bind (newargs replaced-p) (replace-<> args acc)
+    (if replaced-p
+        newargs
+        (append (list acc) newargs)
+        ))
+  )
+
+(defmacro -<> (expr &rest exprs)
+  "insert first if no <>"
+  (if (null exprs)
+      expr
+      (loop
+        with result = expr
+        for each in exprs do
+          (if (listp each)
+              (setq result (list* (car each) (replace-<>-or-insert-first (cdr each) result)))
+              (setq result (list each result)))
+        finally (return result)))
+  )
+
+(defmacro -<>> (expr &rest exprs)
+  "insert last if no <>"
+  (if (null exprs)
+      expr
+      (loop
+        with result = expr
+        for each in exprs do
+          (if (listp each)
+              (setq result (list* (car each) (replace-<>-or-insert-last (cdr each) result)))
+              (setq result (list each result)))
+        finally (return result))))
+
+(defmacro <<- (expr &rest exprs)
+  "backward, insert last"
+  `(->> ,@(reverse exprs) ,expr)
+  )
+
+(defmacro <>- (expr &rest exprs)
+  "backward -<>, insert first"
+  `(-<> ,@(reverse exprs) ,expr))
+
+(defmacro <<>- (expr &rest exprs)
+  "backward -<>>, insert last"
+  `(-<>> ,@(reverse exprs) ,expr))
