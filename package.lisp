@@ -11,6 +11,19 @@
              :collect `(:use ,parent-package)
              :collect `(:export ,@(external-symbols parent-package)))))
 
+(defpackage :suk.def
+  (:use
+   :cl)
+  (:export :defun-inline :defstruct.))
+
+(defpackage :suk.util
+  (:use
+   :cl)
+  (:import-from :suk.def :defun-inline)
+  (:export
+   :ensure-list
+   :ensure-atom
+   :concat-symbol))
 
 (defpackage :suk.flow
   (:use
